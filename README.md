@@ -100,7 +100,32 @@ docker exec mongos mongosh --quiet --eval "sh.status()"
 
 ## Operaciones CRUD
 
-_(pendiente)_
+Se hacen después del balanceo, con los tres shards registrados. Los scripts
+están en `crud/` y cargan `crud/comun.js`, que muestra la distribución por
+shard después de cada operación y, con `explain()`, a qué shards fue cada una.
+Después de cada script se corre el monitoreo completo:
+
+```bash
+docker exec mongos mongosh --quiet --file /scripts/monitoreo/distribucion.js   # antes
+docker exec mongos mongosh sample_mflix --quiet --file /scripts/crud/create.js
+docker exec mongos mongosh --quiet --file /scripts/monitoreo/distribucion.js
+docker exec mongos mongosh sample_mflix --quiet --file /scripts/crud/read.js
+docker exec mongos mongosh --quiet --file /scripts/monitoreo/distribucion.js
+docker exec mongos mongosh sample_mflix --quiet --file /scripts/crud/update.js
+docker exec mongos mongosh --quiet --file /scripts/monitoreo/distribucion.js
+docker exec mongos mongosh sample_mflix --quiet --file /scripts/crud/delete.js
+docker exec mongos mongosh --quiet --file /scripts/monitoreo/distribucion.js
+```
+
+- `create.js`: `insertOne` (id_movie 21350) e `insertMany` (id_movie 21351–22350).
+- `read.js`: `find` por id_movie (`SINGLE_SHARD`), por `genres`/`year`/`imdb.rating`
+  y por rango de id_movie (`SHARD_MERGE`, todos los shards).
+- `update.js`: `updateOne` por id_movie, `updateMany` del lote y un `updateOne` que
+  cambia el id_movie y mueve el documento a otro shard.
+- `delete.js`: `deleteOne` y `deleteMany`; la colección vuelve a 21 349 películas.
+
+Los scripts se pueden repetir en orden: `create.js` se detiene si ya hay películas
+con id_movie mayor a 21349 (en ese caso, correr antes `delete.js`).
 
 ## Estructura
 - `docker-compose.yaml`: definición de los 11 contenedores
@@ -109,7 +134,7 @@ _(pendiente)_
 - `monitoreo/`: script de monitoreo de la distribución entre shards
 - `replicacion/`: pruebas de los replica sets
 - `balanceo/`: ejemplo de balanceo de carga al agregar shard3
-- `crud/`: operaciones CRUD sobre `movies`
+- `crud/`: operaciones CRUD sobre `movies` (`comun.js` tiene las funciones de monitoreo)
 - `reporte/`: reporte de la práctica en LaTeX
 - `CONTEXTO.md`: decisiones, reparto del trabajo y avance del proyecto
 

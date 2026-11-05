@@ -114,6 +114,9 @@ bases_de_datos_distribuidas_MongoDB/
 ├── replicacion/                   Parte 2 (Diego)
 ├── balanceo/                      Parte 2 (Diego)
 ├── crud/                          → evidencia "Operaciones CRUD" (Parte 3, Osvaldo)
+│   ├── comun.js                     funciones de monitoreo que cargan los demás
+│   ├── create.js / read.js
+│   └── update.js / delete.js
 ├── reporte/main.tex               reporte en LaTeX (+ logos, img/)
 ├── README.md
 └── CONTEXTO.md                    este archivo
@@ -160,7 +163,8 @@ docker exec mongos mongosh --quiet --file /scripts/monitoreo/distribucion.js
 - [x] Plantilla del reporte con portada, introducción y secciones 4 a 7 escritas (Luis Felipe).
 - [x] Configuración probada en Docker (MongoDB 8.0.x) y capturas 01–09 tomadas (Luis Felipe). Resultado: 21 349 películas, `id_movie` 1–21 349; tras fragmentar, shard1 9 735 (45.6 %) y shard2 11 614 (54.4 %).
 - [x] Parte 2: scripts de replica sets y balanceo, probados en el cluster y sección 8/9 del reporte llenada (Diego). Falta tomar las capturas 10–19.
-- [ ] Parte 3: CRUD con monitoreo (Osvaldo).
+- [x] Parte 3: scripts de CRUD (`crud/`) y sección 10 del reporte (Osvaldo). Probados en MongoDB 8.0 con los tres shards registrados.
+- [ ] Parte 3: capturas 20–28 (Osvaldo).
 - [ ] Conclusión, compilar el PDF y subirlo (todos).
 
 ---
@@ -189,7 +193,7 @@ Scripts en `crud/` (borrar `crud/.gitkeep`), ejecutados con:
 ```powershell
 docker exec mongos mongosh sample_mflix --quiet --file /scripts/crud/<archivo>.js
 ```
-Con `--file` no se imprime nada automáticamente: usar `print()` / `printjson()`. Capturas **20–39** y sección "Realizar operaciones CRUD…" de `reporte/main.tex`.
+Con `--file` no se imprime nada automáticamente: usar `print()` / `printjson()`. Capturas **20–28** y sección "Realizar operaciones CRUD…" de `reporte/main.tex`.
 
 Hacerlo **después del balanceo** (tres shards registrados). Si Diego aún no termina, en tu máquina puedes registrar shard3 tú mismo con su script o con `sh.addShard` (sección 8) para trabajar.
 
@@ -228,6 +232,22 @@ Capturas de la Parte 1 (ya referenciadas en `main.tex`):
 | `07-id-movie.png` | `05-id-movie.js` | `id_movie de 1 a 21349, 21349 valores distintos` |
 | `08-shard-collection.png` | `06-shard-collection.js` | `chunksize: 1 MB`, índice `id_movie_hashed` y `collectionsharded` |
 | `09-distribucion-fragmentada.png` | `monitoreo/distribucion.js` (unos minutos después) | Películas repartidas entre shard1 y shard2 (cerca de 45 % / 55 %). Si la columna Huérfanos no está en 0, esperar ~15 min y repetir |
+
+Capturas de la Parte 3 (ya referenciadas en `main.tex`), en este orden:
+
+| Captura | Comando | Qué debe verse |
+|---|---|---|
+| `20-distribucion-antes-crud.png` | `monitoreo/distribucion.js` | Tres shards, 21 349 documentos |
+| `21-create.png` | `crud/create.js` | `insertOne` en un shard (`SINGLE_SHARD`) y el lote de 1000 repartido entre los tres |
+| `22-monitoreo-create.png` | `monitoreo/distribucion.js` | Total 22 350 |
+| `23-read.png` | `crud/read.js` | `SINGLE_SHARD` por id_movie; `SHARD_MERGE` por genres/year y por rango |
+| `24-monitoreo-read.png` | `monitoreo/distribucion.js` | Igual que la 22 |
+| `25-update.png` | `crud/update.js` | `matchedCount`/`modifiedCount`; el cambio de id_movie mueve una película de shard |
+| `26-monitoreo-update.png` | `monitoreo/distribucion.js` | Total 22 350; un shard con uno menos y otro con uno más |
+| `27-delete.png` | `crud/delete.js` | `deletedCount` 1 y 1000; 21 349 películas |
+| `28-monitoreo-delete.png` | `monitoreo/distribucion.js` | Total 21 349, igual que la 20 |
+
+Antes de empezar, el balanceo debe haber terminado: correr el monitoreo dos veces con un minuto de diferencia y que los números no cambien.
 
 ---
 
