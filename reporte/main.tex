@@ -484,21 +484,110 @@ El reparto no queda exactamente a un tercio cada uno porque el balanceador deja 
 
 % ------------------------------------------------------------
 % SECCIÓN A CARGO DE OSVALDO. Ver CONTEXTO.md.
-% Scripts en crud/, capturas 20-39. Después de cada operación,
-% captura del monitoreo (monitoreo/distribucion.js).
+% Scripts en crud/, capturas 20-28.
 % ------------------------------------------------------------
 
+Las operaciones CRUD se realizaron después del balanceo, con los tres shards registrados, y siempre a través de \texttt{mongos}. Las películas que se crean en esta sección tienen un id\_movie mayor a 21\,349 para distinguirlas de las originales, que no se modifican. Al terminar, la colección vuelve a tener 21\,349 películas.
+
+\subsection{Funciones de apoyo y monitoreo}
+
+Los cuatro scripts cargan el archivo \texttt{crud/comun.js}, que define dos funciones de monitoreo. La función \texttt{distribucion()} usa \texttt{\$shardedDataDistribution} para mostrar cuántos documentos tiene cada shard justo después de cada operación individual. La función \texttt{destino()} usa \texttt{explain()} para mostrar el plan de \texttt{mongos}: \texttt{SINGLE\_SHARD} cuando la operación va a un solo shard y \texttt{SHARD\_MERGE} cuando consulta a todos y junta los resultados, junto con los documentos que devolvió cada shard.
+
+\lstinputlisting[style=jsStyle]{../crud/comun.js}
+
+Además, después de cada script se ejecutó el script de monitoreo completo, \texttt{distribucion.js}. Antes de comenzar, la distribución era la que dejó el balanceo:
+
+\begin{lstlisting}[style=plainStyle]
+docker exec mongos mongosh --quiet --file /scripts/monitoreo/distribucion.js
+\end{lstlisting}
+
+\captura{20-distribucion-antes-crud.png}{Distribución de movies antes de las operaciones CRUD.}{1.0}
+
 \subsection{Create}
-\pendiente{inserción de películas con \texttt{insertOne} e \texttt{insertMany} (id\_movie mayores a 21\,349) y monitoreo de la distribución.}
+
+Se insertó una película con \texttt{insertOne} (id\_movie 21\,350) y un lote de 1\,000 películas con \texttt{insertMany} (id\_movie 21\,351 a 22\,350). Todas incluyen id\_movie, porque es la shard key: \texttt{mongos} calcula el hash de su valor para decidir en qué shard se guarda cada documento.
+
+\lstinputlisting[style=jsStyle]{../crud/create.js}
+
+\begin{lstlisting}[style=plainStyle]
+docker exec mongos mongosh sample_mflix --quiet --file /scripts/crud/create.js
+\end{lstlisting}
+
+\captura{21-create.png}{Inserción de películas con insertOne e insertMany.}{1.0}
+
+La película de \texttt{insertOne} se guardó en un solo shard, el que corresponde al hash de su id\_movie, y solo ese shard aumentó en un documento. Aunque los id\_movie del lote son consecutivos, el hash repartió las 1\,000 películas entre los tres shards, en proporción a la parte del rango de hash que le pertenece a cada uno.
+
+\begin{lstlisting}[style=plainStyle]
+docker exec mongos mongosh --quiet --file /scripts/monitoreo/distribucion.js
+\end{lstlisting}
+
+\captura{22-monitoreo-create.png}{Distribución de movies después de las inserciones.}{1.0}
+
+El total de la colección aumentó a 22\,350 documentos y cada shard sumó las películas nuevas que le tocaron.
 
 \subsection{Read}
-\pendiente{consultas por id\_movie (un solo shard) y por otros campos (todos los shards), con \texttt{explain()}, y monitoreo.}
+
+Se realizaron tres consultas: por id\_movie, por campos que no forman parte de la shard key (genres, year e imdb.rating) y por un rango de id\_movie que corresponde al lote insertado.
+
+\lstinputlisting[style=jsStyle]{../crud/read.js}
+
+\begin{lstlisting}[style=plainStyle]
+docker exec mongos mongosh sample_mflix --quiet --file /scripts/crud/read.js
+\end{lstlisting}
+
+\captura{23-read.png}{Consultas sobre la colección distribuida con explain().}{1.0}
+
+Las búsquedas por id\_movie usan el plan \texttt{SINGLE\_SHARD}: \texttt{mongos} calcula el hash del valor y consulta únicamente el shard que tiene ese documento. La consulta por genres, year e imdb.rating no incluye la shard key, así que \texttt{mongos} la envía a los tres shards y junta sus resultados (\texttt{SHARD\_MERGE}). Lo mismo ocurre con el rango de id\_movie: con una shard key hashed los valores consecutivos están repartidos, por lo que un rango también se consulta en todos los shards.
+
+\begin{lstlisting}[style=plainStyle]
+docker exec mongos mongosh --quiet --file /scripts/monitoreo/distribucion.js
+\end{lstlisting}
+
+\captura{24-monitoreo-read.png}{Distribución de movies después de las consultas.}{1.0}
+
+Las consultas no modifican documentos, por lo que la distribución quedó igual que después de las inserciones.
 
 \subsection{Update}
-\pendiente{actualizaciones con \texttt{updateOne} y \texttt{updateMany} y monitoreo.}
+
+Se realizaron tres actualizaciones: un \texttt{updateOne} por id\_movie que modifica la calificación y los géneros de la película insertada, un \texttt{updateMany} que marca como revisadas las 1\,001 películas insertadas, y un \texttt{updateOne} que cambia el valor de id\_movie de una película.
+
+\lstinputlisting[style=jsStyle]{../crud/update.js}
+
+\begin{lstlisting}[style=plainStyle]
+docker exec mongos mongosh sample_mflix --quiet --file /scripts/crud/update.js
+\end{lstlisting}
+
+\captura{25-update.png}{Actualización de películas con updateOne y updateMany.}{1.0}
+
+El \texttt{updateOne} por id\_movie se envió a un solo shard y el \texttt{updateMany} a los tres; en ambos casos \texttt{matchedCount} y \texttt{modifiedCount} coinciden con los documentos esperados. Cambiar campos que no son la shard key no mueve documentos, por lo que la distribución no cambió. En cambio, al cambiar el valor de id\_movie, el nuevo hash pertenece a otro shard y MongoDB movió el documento: el shard de origen perdió una película y el de destino ganó una, sin cambiar el total.
+
+\begin{lstlisting}[style=plainStyle]
+docker exec mongos mongosh --quiet --file /scripts/monitoreo/distribucion.js
+\end{lstlisting}
+
+\captura{26-monitoreo-update.png}{Distribución de movies después de las actualizaciones.}{1.0}
 
 \subsection{Delete}
-\pendiente{eliminaciones con \texttt{deleteOne} y \texttt{deleteMany} y monitoreo.}
+
+Por último, se eliminó la película de \texttt{insertOne} con \texttt{deleteOne}, usando su id\_movie actual, y el resto del lote con \texttt{deleteMany}.
+
+\lstinputlisting[style=jsStyle]{../crud/delete.js}
+
+\begin{lstlisting}[style=plainStyle]
+docker exec mongos mongosh sample_mflix --quiet --file /scripts/crud/delete.js
+\end{lstlisting}
+
+\captura{27-delete.png}{Eliminación de películas con deleteOne y deleteMany.}{1.0}
+
+El \texttt{deleteOne} se envió solo al shard que tenía la película, mientras que el \texttt{deleteMany} se ejecutó en los tres shards y cada uno borró sus propios documentos del lote, 1\,000 en total.
+
+\begin{lstlisting}[style=plainStyle]
+docker exec mongos mongosh --quiet --file /scripts/monitoreo/distribucion.js
+\end{lstlisting}
+
+\captura{28-monitoreo-delete.png}{Distribución de movies después de las eliminaciones.}{1.0}
+
+La colección volvió a tener 21\,349 películas y cada shard regresó a la cantidad de documentos que tenía antes de las operaciones CRUD.
 
 % ============================================================
 \section{Conclusión}
