@@ -58,7 +58,7 @@
 % ============================================================
 %  DATOS DE LA TAREA
 % ============================================================
-\newcommand{\alumnoUno}{Osvaldo Hernández Juarez}
+\newcommand{\alumnoUno}{Osvaldo Hernández Juárez}
 \newcommand{\matriculaUno}{385493}
 \newcommand{\alumnoDos}{Diego Flores Verdad Grijalva}
 \newcommand{\matriculaDos}{385660}
@@ -70,7 +70,7 @@
 \newcommand{\actividad}{Proyecto Segundo Parcial: Bases de Datos Distribuidas}
 % Versión de la portada, con el salto de renglón donde se ve mejor.
 \newcommand{\actividadPortada}{Proyecto Segundo Parcial:\\ Bases de Datos Distribuidas}
-\newcommand{\fechaEntrega}{4 de noviembre de 2026} % ajustar el día de la entrega
+\newcommand{\fechaEntrega}{5 de noviembre de 2026} % ajustar el día de la entrega
 
 \hypersetup{
     pdftitle={\actividad},
@@ -523,7 +523,7 @@ docker exec mongos mongosh --quiet --file /scripts/monitoreo/distribucion.js
 
 \captura{22-monitoreo-create.png}{Distribución de movies después de las inserciones.}{1.0}
 
-El total de la colección aumentó a 22\,350 documentos y cada shard sumó las películas nuevas que le tocaron.
+El total de la colección aumentó a 22\,350 documentos. Además, entre la inserción y este monitoreo el balanceador movió por su cuenta un chunk de 661 documentos de shard1 a shard2: shard1 bajó de 8\,791 a 8\,130 documentos, shard2 pasó de 10 a 11 chunks y los huérfanos de shard1 aumentaron justo en 661. Antes de las inserciones, shard1 tenía casi 3\,MB más que los otros dos shards; las películas nuevas hicieron que la diferencia superara el umbral de tres veces el tamaño de chunk y el balanceador volvió a repartir los datos sin intervención.
 
 \subsection{Read}
 
@@ -587,14 +587,18 @@ docker exec mongos mongosh --quiet --file /scripts/monitoreo/distribucion.js
 
 \captura{28-monitoreo-delete.png}{Distribución de movies después de las eliminaciones.}{1.0}
 
-La colección volvió a tener 21\,349 películas y cada shard regresó a la cantidad de documentos que tenía antes de las operaciones CRUD.
+La colección volvió a tener 21\,349 películas. El reparto final no es igual al de la figura de la distribución antes de las operaciones CRUD: shard1 tiene 631 películas menos y shard2 631 más. Son las películas originales que venían en el chunk que el balanceador movió después de las inserciones (los otros 30 documentos de ese chunk eran películas nuevas y se eliminaron con el \texttt{deleteMany}). Las películas siguen completas; solo cambió el shard que guarda una parte de ellas.
 
 % ============================================================
 \section{Conclusión}
 
 % Al final, entre todos: dos o tres párrafos con lo que se observó
 % (replicación, balanceo, distribución en las operaciones CRUD).
-\pendiente{conclusión del proyecto.}
+Con este proyecto se implementó una base de datos distribuida con MongoDB sobre Docker: un config server, tres shards configurados como replica sets de tres miembros y un router \texttt{mongos}, con la colección movies de sample\_mflix fragmentada por una shard key hashed sobre id\_movie. Para las aplicaciones, el cluster se comporta como una sola base de datos: todas las operaciones se hicieron a través de \texttt{mongos}, que decide en qué shard está cada documento.
+
+La replicación dio tolerancia a fallos dentro de cada shard. Los SECONDARY mantuvieron los mismos datos que su PRIMARY, y al detener el PRIMARY de shard1 se eligió otro miembro automáticamente sin que las consultas a través de \texttt{mongos} dejaran de funcionar. Al encenderlo de nuevo, el nodo se puso al día y recuperó su papel por su prioridad.
+
+El sharding repartió la carga entre los shards. Al registrar shard3 con la colección ya cargada, el balanceador le movió chunks hasta dejar a los tres con una parte similar de los datos, y volvió a actuar por sí solo durante las operaciones CRUD, cuando las inserciones desbalancearon a shard1. La shard key hashed repartió entre los tres shards incluso valores consecutivos de id\_movie, y el monitoreo con \texttt{explain()} mostró su efecto en las consultas: las operaciones que filtran por id\_movie se envían a un solo shard, mientras que las que usan otros campos, o rangos de id\_movie, se ejecutan en todos. Por eso la elección de la shard key debe considerar tanto el reparto de los datos como las consultas más frecuentes de la aplicación.
 
 % ============================================================
 \section*{Referencias}
