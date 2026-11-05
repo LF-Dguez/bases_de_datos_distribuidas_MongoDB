@@ -66,11 +66,37 @@ Desde el equipo (por ejemplo, con Compass) la conexión es `mongodb://localhost:
 
 ## Replica sets y failover
 
-_(pendiente)_
+```bash
+# Estado de los tres replica sets (un PRIMARY y dos SECONDARY cada uno)
+docker exec mongos mongosh --quiet --file /scripts/replicacion/01-estado-replicasets.js
+
+# El SECONDARY de shard1 tiene los mismos datos que su PRIMARY
+docker exec mongos mongosh --quiet --file /scripts/replicacion/02-lectura-secundario.js
+
+# Failover: tumbar el PRIMARY de shard1 y ver la elección del nuevo
+docker stop shard1-1
+docker exec mongos mongosh --quiet --file /scripts/replicacion/03-failover-caida.js
+
+# Recuperación: shard1-1 vuelve como SECONDARY y recupera el PRIMARY por su prioridad
+docker start shard1-1
+docker exec mongos mongosh --quiet --file /scripts/replicacion/04-recuperacion.js
+```
 
 ## Balanceo de carga
 
-_(pendiente)_
+```bash
+# Distribución antes de agregar shard3 (solo shard1 y shard2)
+docker exec mongos mongosh --quiet --file /scripts/monitoreo/distribucion.js
+
+# Registrar shard3 con la colección ya cargada
+docker exec mongos mongosh --quiet --file /scripts/balanceo/01-agregar-shard3.js
+
+# Monitorear mientras el balanceador mueve datos (correr varias veces)
+docker exec mongos mongosh --quiet --file /scripts/monitoreo/distribucion.js
+
+# Estado final del cluster con los tres shards
+docker exec mongos mongosh --quiet --eval "sh.status()"
+```
 
 ## Operaciones CRUD
 
