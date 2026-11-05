@@ -23,7 +23,7 @@
 \IfFontExistsTF{Consolas}{%
   \setmonofont{Consolas}[Scale=MatchLowercase]%
 }{%
-  \setmonofont{DejaVu Sans Mono}[Scale=MatchLowercase]%
+  \setmonofont{Liberation Mono}[Scale=MatchLowercase]%
 }
 
 \usepackage[a4paper, margin=2.5cm]{geometry}
@@ -375,25 +375,109 @@ Las películas quedaron repartidas entre shard1 y shard2 en partes similares. El
 \section{Replica sets de los shards}
 \label{sec:replicacion}
 
-% ------------------------------------------------------------
-% SECCIÓN A CARGO DE DIEGO. Ver CONTEXTO.md.
-% Scripts en replicacion/, capturas 10-14.
-% ------------------------------------------------------------
+\subsection{Estado de los replica sets}
 
-\pendiente{estado de los replica sets (\texttt{rs.status()}): un PRIMARY y dos SECONDARY por shard, y que los SECONDARY tienen las mismas películas que el PRIMARY.}
+Para cada shard se consulta \texttt{replSetGetStatus} conectando directo a uno de sus miembros (no a \texttt{mongos}, que no expone el estado interno del replica set), con \texttt{directConnection} para no depender de que ese miembro sea justo el PRIMARY.
 
-\pendiente{prueba de failover: detener el PRIMARY de un shard (\texttt{docker stop}), mostrar la elección del nuevo PRIMARY y que las consultas a través de mongos siguen funcionando; después volver a encender el nodo.}
+\lstinputlisting[style=jsStyle]{../replicacion/01-estado-replicasets.js}
+
+\begin{lstlisting}[style=plainStyle]
+docker exec mongos mongosh --quiet --file /scripts/replicacion/01-estado-replicasets.js
+\end{lstlisting}
+
+\captura{10-estado-replicasets.png}{Estado de los tres replica sets: un PRIMARY y dos SECONDARY cada uno.}{1.0}
+
+Los tres shards quedaron con un PRIMARY y dos SECONDARY, con el mismo \texttt{optimeDate} entre los miembros de cada uno: no hay retraso de replicación perceptible.
+
+\subsection{Los SECONDARY tienen los mismos datos}
+
+Se conecta directo al PRIMARY y a un SECONDARY de shard1 y se compara el número de documentos de \texttt{sample\_mflix.movies} en cada uno. Por defecto un SECONDARY rechaza lecturas para evitar que una aplicación se conecte ahí por error, así que hay que permitirlas explícitamente con \texttt{setReadPref("secondary")}.
+
+\lstinputlisting[style=jsStyle]{../replicacion/02-lectura-secundario.js}
+
+\begin{lstlisting}[style=plainStyle]
+docker exec mongos mongosh --quiet --file /scripts/replicacion/02-lectura-secundario.js
+\end{lstlisting}
+
+\captura{11-lectura-secundario.png}{El SECONDARY de shard1 tiene copiados los mismos documentos que su PRIMARY.}{0.9}
+
+El SECONDARY devolvió el mismo total que el PRIMARY, y el documento de ejemplo salió idéntico en ambos: la replicación dentro del shard está al día.
+
+\subsection{Prueba de failover}
+
+Se detiene el contenedor del PRIMARY de shard1 (\texttt{shard1-1}) directamente desde Docker, sin tocar mongosh, y se espera unos segundos a que los dos SECONDARY elijan uno nuevo.
+
+\begin{lstlisting}[style=plainStyle]
+docker stop shard1-1
+\end{lstlisting}
+
+\lstinputlisting[style=jsStyle]{../replicacion/03-failover-caida.js}
+
+\begin{lstlisting}[style=plainStyle]
+docker exec mongos mongosh --quiet --file /scripts/replicacion/03-failover-caida.js
+\end{lstlisting}
+
+\captura{12-failover-caida.png}{Nuevo PRIMARY elegido en shard1 y consulta a través de mongos funcionando sin shard1-1.}{0.9}
+
+Con \texttt{shard1-1} caído, \texttt{shard1-2} fue elegido PRIMARY y el cluster, visto desde \texttt{mongos}, siguió respondiendo con el total completo de películas: el router no necesita saber cuál nodo específico está activo, solo que el shard tenga un PRIMARY.
+
+Después se vuelve a encender \texttt{shard1-1}. Como tiene prioridad más alta, en cuanto termina de ponerse al día provoca una nueva elección y recupera el PRIMARY.
+
+\begin{lstlisting}[style=plainStyle]
+docker start shard1-1
+\end{lstlisting}
+
+\lstinputlisting[style=jsStyle]{../replicacion/04-recuperacion.js}
+
+\begin{lstlisting}[style=plainStyle]
+docker exec mongos mongosh --quiet --file /scripts/replicacion/04-recuperacion.js
+\end{lstlisting}
+
+\captura{13-failover-recuperacion.png}{shard1-1 vuelve como SECONDARY y, al ponerse al día, recupera el PRIMARY por su prioridad.}{0.9}
+
+\texttt{shard1-1} reapareció primero como SECONDARY (tenía que replicar lo que pasó mientras estuvo apagado) y segundos después, ya sincronizado, volvió a ser PRIMARY — exactamente el comportamiento esperado de una prioridad más alta.
 
 % ============================================================
 \section{Mostrar un ejemplo de balanceo de carga entre shards}
 \label{sec:balanceo}
 
-% ------------------------------------------------------------
-% SECCIÓN A CARGO DE DIEGO. Ver CONTEXTO.md.
-% Scripts en balanceo/, capturas 15-19.
-% ------------------------------------------------------------
+Antes de agregar shard3, la colección ya fragmentada entre shard1 y shard2 se revisa con el script de monitoreo.
 
-\pendiente{distribución antes de agregar shard3 (monitoreo), registro de shard3 con \texttt{sh.addShard}, monitoreo durante la migración y distribución final con los tres shards, más \texttt{sh.status()}.}
+\begin{lstlisting}[style=plainStyle]
+docker exec mongos mongosh --quiet --file /scripts/monitoreo/distribucion.js
+\end{lstlisting}
+
+\captura{15-antes-balanceo.png}{Distribución entre shard1 y shard2 antes de registrar shard3.}{1.0}
+
+\texttt{shard3} ya estaba levantado e inicializado como replica set desde el principio (\texttt{configuracion/02-init-shards.js}); lo único que faltaba era registrarlo en el cluster con \texttt{sh.addShard}.
+
+\lstinputlisting[style=jsStyle]{../balanceo/01-agregar-shard3.js}
+
+\begin{lstlisting}[style=plainStyle]
+docker exec mongos mongosh --quiet --file /scripts/balanceo/01-agregar-shard3.js
+\end{lstlisting}
+
+\captura{16-agregar-shard3.png}{shard3 registrado; el cluster ya tiene tres shards.}{0.9}
+
+En cuanto \texttt{mongos} ve disponible al shard nuevo, el balanceador empieza a moverle chunks por su cuenta, sin que haya que pedírselo. El avance se sigue corriendo el mismo script de monitoreo varias veces.
+
+\begin{lstlisting}[style=plainStyle]
+docker exec mongos mongosh --quiet --file /scripts/monitoreo/distribucion.js
+\end{lstlisting}
+
+\captura{17-durante-balanceo.png}{Migración en curso: shard3 ya tiene documentos y los otros dos van bajando.}{1.0}
+
+Unos minutos después, con la ronda de balanceo terminada, los tres shards quedan con una parte similar de la colección.
+
+\captura{18-despues-balanceo.png}{Distribución final entre los tres shards, alrededor de un tercio cada uno.}{1.0}
+
+\begin{lstlisting}[style=plainStyle]
+docker exec mongos mongosh --quiet --eval "sh.status()"
+\end{lstlisting}
+
+\captura{19-sh-status.png}{Estado final del cluster con los tres shards registrados.}{1.0}
+
+El reparto no queda exactamente a un tercio cada uno porque el balanceador deja de mover datos en cuanto la diferencia entre shards baja de tres veces el tamaño de chunk (3\,MB); aun así, los tres terminan con una proporción parecida de la colección.
 
 % ============================================================
 \section{Realizar operaciones CRUD sobre la base de datos distribuida}
