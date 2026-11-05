@@ -1,0 +1,441 @@
+\documentclass[12pt]{article}
+
+% ============================================================
+%  PAQUETES
+% ============================================================
+\usepackage[spanish]{babel}
+
+% ------------------------------------------------------------
+%  TIPOGRAFÍA: Arial en el texto, monoespaciada en el código
+%  IMPORTANTE: este archivo se compila con XeLaTeX o LuaLaTeX,
+%  no con pdfLaTeX. En Overleaf: Menu > Compiler > XeLaTeX.
+%  Si Arial no está instalado se usa Liberation Sans, que tiene
+%  exactamente las mismas métricas y no altera la paginación.
+% ------------------------------------------------------------
+\usepackage{fontspec}
+\IfFontExistsTF{Arial}{%
+  \setmainfont{Arial}%
+  \setsansfont{Arial}%
+}{%
+  \setmainfont{Liberation Sans}%
+  \setsansfont{Liberation Sans}%
+}
+\IfFontExistsTF{Consolas}{%
+  \setmonofont{Consolas}[Scale=MatchLowercase]%
+}{%
+  \setmonofont{DejaVu Sans Mono}[Scale=MatchLowercase]%
+}
+
+\usepackage[a4paper, margin=2.5cm]{geometry}
+\usepackage{graphicx}          % Imágenes
+\usepackage{float}             % Anclaje de figuras con [H]
+\usepackage{enumitem}          % Control de listas
+\usepackage{needspace}         % Evita separar un bloque de su captura
+\usepackage{tocloft}           % Ancho de la numeración en el índice
+\setlength{\cftsecnumwidth}{2em}
+\setlength{\cftsubsecnumwidth}{2.8em}
+\usepackage{xcolor}            % Colores
+\usepackage{listings}          % Bloques de código
+\usepackage{fancyhdr}          % Encabezado y pie de página
+\usepackage{titlesec}          % Estilo de títulos de sección
+\usepackage{microtype}         % Mejor justificación / tipografía
+\usepackage{setspace}          % Interlineado
+\onehalfspacing                % Interlineado 1.5 en todo el documento
+\usepackage[font=small, labelfont={bf,color=purple-uach}]{caption}
+\usepackage[hidelinks]{hyperref} % Enlaces e índice clicable
+\usepackage{xurl}
+\urlstyle{same}
+
+\captionsetup{font={small,stretch=1.0}}    % pies de figura a renglón sencillo
+
+\graphicspath{{img/}{./}}
+
+% ============================================================
+%  COLORES
+% ============================================================
+\definecolor{purple-uach}{HTML}{371e49}
+
+% ============================================================
+%  DATOS DE LA TAREA
+% ============================================================
+\newcommand{\alumnoUno}{Osvaldo Hernández Juarez}
+\newcommand{\matriculaUno}{385493}
+\newcommand{\alumnoDos}{Diego Flores Verdad Grijalva}
+\newcommand{\matriculaDos}{385660}
+\newcommand{\alumnoTres}{Luis Felipe Domínguez Chávez}
+\newcommand{\matriculaTres}{385500}
+\newcommand{\materia}{Bases de Datos Avanzadas}
+\newcommand{\docente}{José Saúl De Lira Miramontes}
+\newcommand{\grupoCarrera}{Grupo 5k2}
+\newcommand{\actividad}{Proyecto Segundo Parcial: Bases de Datos Distribuidas}
+% Versión de la portada, con el salto de renglón donde se ve mejor.
+\newcommand{\actividadPortada}{Proyecto Segundo Parcial:\\ Bases de Datos Distribuidas}
+\newcommand{\fechaEntrega}{4 de noviembre de 2026} % ajustar el día de la entrega
+
+\hypersetup{
+    pdftitle={\actividad},
+    pdfauthor={\alumnoUno, \alumnoDos, \alumnoTres},
+    pdfsubject={\materia}
+}
+
+% ============================================================
+%  ESTILO DE TÍTULOS DE SECCIÓN
+% ============================================================
+\titleformat{\section}
+  {\large\bfseries\color{purple-uach}}{\thesection}{1em}{}
+\titleformat{\subsection}
+  {\normalsize\bfseries\color{purple-uach}}{\thesubsection}{1em}{}
+\titlespacing*{\section}{0pt}{2.4ex plus 1ex minus .2ex}{1.2ex plus .2ex}
+
+% ============================================================
+%  PIE DE PÁGINA
+% ============================================================
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+\fancyfoot[R]{\thepage}
+
+% ============================================================
+%  ESTILO DE BLOQUES DE CÓDIGO
+% ============================================================
+\lstdefinelanguage{mongosh}{
+    morekeywords={db,sh,rs,const,let,new,find,findOne,insertOne,insertMany,updateOne,updateMany,deleteOne,deleteMany,countDocuments,aggregate,runCommand,getSiblingDB,createCollection,drop,print,printjson},
+    morestring=[b]",
+    morestring=[b]',
+    morecomment=[l]{//},
+    sensitive=true
+}
+
+\lstdefinestyle{codeStyle}{
+    backgroundcolor=\color{gray!8},
+    commentstyle=\color{purple-uach!70},
+    keywordstyle=\color{purple-uach}\bfseries,
+    stringstyle=\color{teal},
+    basicstyle=\setstretch{1}\ttfamily\footnotesize,
+    breaklines=true,
+    breakatwhitespace=false,
+    frame=single,
+    rulecolor=\color{gray!40},
+    tabsize=2,
+    captionpos=b,
+    aboveskip=1.2ex,
+    belowskip=1.2ex
+}
+\lstset{style=codeStyle, language=mongosh}
+\lstdefinestyle{pyStyle}{style=codeStyle, language=Python, showstringspaces=false, morekeywords={self,None,True,False}}
+\lstdefinestyle{plainStyle}{style=codeStyle, language={}, showstringspaces=false}
+
+
+% ============================================================
+%  CAPTURAS Y PENDIENTES
+% ============================================================
+% \captura{archivo}{pie de figura}{ancho}: si la imagen todavía no está en
+% img/, se muestra un recuadro con el nombre del archivo que falta.
+\newcommand{\captura}[3]{%
+  \begin{figure}[H]
+    \centering
+    \IfFileExists{img/#1}{%
+      \includegraphics[width=#3\linewidth]{#1}%
+    }{%
+      \fbox{\parbox[c][2.5cm][c]{0.8\linewidth}{\centering\small\color{gray}Falta la captura \texttt{img/#1}}}%
+    }
+    \caption{#2}
+  \end{figure}}
+% \pendiente{texto}: aviso visible de algo que falta; quitarlo antes de entregar.
+\newcommand{\pendiente}[1]{%
+  \par\noindent\fcolorbox{purple-uach}{purple-uach!6}{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{\small\textbf{Pendiente:} #1}}\par}
+
+\lstdefinestyle{jsStyle}{style=codeStyle, language=mongosh, showstringspaces=false, morecomment=[s]{/*}{*/}, morestring=[b]`}
+
+\emergencystretch=1.5em
+
+% ============================================================
+\begin{document}
+
+% ---------------- PORTADA ----------------
+\begin{titlepage}
+\singlespacing
+\centering
+\noindent
+\begin{minipage}[c]{0.5\linewidth}
+    \raggedright
+    \includegraphics[height=4.5cm]{logo-uach.png}
+\end{minipage}%
+\begin{minipage}[c]{0.5\linewidth}
+    \raggedleft
+    \includegraphics[height=4.5cm]{logo-fing.png}
+\end{minipage}\\[1.2cm]
+{\Large \textbf{Universidad Autónoma de Chihuahua}}\\[0.2cm]
+{\large Facultad de Ingeniería}\\[0.2cm]
+{\normalsize \grupoCarrera}\\[2cm]
+
+{\color{purple-uach}\rule{\linewidth}{0.6mm}}\\[0.5cm]
+{\huge \bfseries \linespread{1.25}\selectfont \actividadPortada\par}\vspace{0.5cm}
+{\color{purple-uach}\rule{\linewidth}{0.6mm}}\\[1.5cm]
+
+{\Large \materia}\\[0.3cm]
+{\large Docente: \docente}
+
+\vfill
+
+\begin{flushright}
+    \large
+    \textbf{\alumnoUno}\\
+    Matrícula: \matriculaUno\\[0.4cm]
+    \textbf{\alumnoDos}\\
+    Matrícula: \matriculaDos\\[0.4cm]
+    \textbf{\alumnoTres}\\
+    Matrícula: \matriculaTres
+\end{flushright}
+
+\vspace{1cm}
+{\large \fechaEntrega}
+
+\end{titlepage}
+
+
+% ---------------- ÍNDICE ----------------
+\tableofcontents
+\newpage
+
+% ============================================================
+%  CAPTURAS: cada quien numera las suyas en su rango
+%    01-09  Luis Felipe (cluster, datos y shard key)
+%    10-19  Diego (replica sets y balanceo)
+%    20-39  Osvaldo (CRUD con monitoreo)
+%  Las imágenes van en reporte/img/. Si una falta, el PDF muestra un
+%  recuadro con el nombre del archivo.
+% ============================================================
+
+% ============================================================
+\section{Introducción}
+
+En la actividad anterior se configuró un cluster de MongoDB con sharding sobre Docker y una colección pequeña de usuarios. En este proyecto el mismo esquema se aplicó a una base de datos real, sample\_mflix, cuya colección movies contiene 21\,349 películas. Cada shard se configuró como un replica set de tres miembros, se agregó a cada película un identificador numérico, id\_movie, que se usó como shard key de tipo hashed, y sobre la colección distribuida se realizaron operaciones CRUD, monitoreando después de cada una cómo quedan repartidos los documentos entre los shards. También se muestra cómo el balanceador reparte la carga cuando se agrega un shard nuevo a un cluster que ya tiene datos.
+
+Los archivos del proyecto (Docker Compose, scripts de configuración, monitoreo, balanceo y operaciones CRUD) se encuentran en el repositorio \url{https://github.com/LF-Dguez/bases_de_datos_distribuidas_MongoDB}.
+
+% ============================================================
+\section{Objetivo}
+
+Implementar soluciones para Bases de Datos Distribuidas.
+
+% ============================================================
+\section{Entorno de trabajo}
+
+El proyecto se realizó en Windows 11 con Docker Desktop y Docker Compose v2. Los once nodos del cluster usan la imagen oficial \texttt{mongo:8.0}. Los scripts se escribieron en JavaScript y se ejecutaron con el \texttt{mongosh} que incluye la imagen, dentro del contenedor del router; la importación de los datos se hizo con \texttt{mongoimport}, que también viene en la imagen.
+
+% ============================================================
+\section{Configurar un Cluster en Mongo sobre Docker con los siguientes nodos: configsvr, shard1, shard2, shard3, Replica set, mongos router}
+
+\subsection{Arquitectura}
+
+El cluster está formado por once contenedores:
+
+\begin{itemize}[itemsep=2pt, topsep=4pt]
+    \item \texttt{configsvr}: config server. Guarda los metadatos del cluster, como la lista de shards y los rangos de datos (chunks) de cada uno. Es un replica set de un miembro.
+    \item \texttt{shard1}, \texttt{shard2} y \texttt{shard3}: cada shard es un replica set de tres miembros (por ejemplo, \texttt{shard1-1}, \texttt{shard1-2} y \texttt{shard1-3}). Uno de ellos es el PRIMARY, que recibe las escrituras, y los otros dos son SECONDARY y mantienen una copia de los mismos datos. Así cada parte de la colección está guardada tres veces y el shard sigue funcionando si falla uno de sus miembros.
+    \item \texttt{mongos}: router. Las aplicaciones se conectan a él y él envía cada operación al shard que corresponde. No guarda datos.
+\end{itemize}
+
+\subsection{Docker Compose}
+
+\lstinputlisting[style=plainStyle]{../docker-compose.yaml}
+
+Los puntos principales de la configuración son:
+
+\begin{itemize}[itemsep=2pt, topsep=4pt]
+    \item El config server se inicia con \texttt{--configsvr} y los miembros de los shards con \texttt{--shardsvr}. Con \texttt{--replSet} cada uno recibe el nombre de su replica set; los tres miembros de un shard comparten el mismo nombre.
+    \item Los nueve miembros de los shards comparten la misma configuración base, definida una sola vez con la extensión \texttt{x-shard} y reutilizada con \texttt{\textless\textless: *shard}.
+    \item Todos escuchan en el puerto 27017 dentro de su contenedor y aceptan conexiones de los demás con \texttt{--bind\_ip\_all}. Cada \texttt{mongod} limita su caché a 0.25 GB con \texttt{--wiredTigerCacheSizeGB}, para que los diez procesos quepan en la memoria de Docker Desktop.
+    \item Solo \texttt{mongos} se publica hacia el equipo, en el puerto 27030, porque el 27017 lo ocupa el MongoDB instalado en Windows.
+    \item En \texttt{mongos} se montan las carpetas del repositorio con los scripts (\texttt{/scripts}) y con los datos (\texttt{/datos}), para ejecutarlos con las herramientas de ese contenedor.
+    \item Cada nodo de datos tiene su propio volumen, de modo que la información sobrevive si se recrea el contenedor.
+\end{itemize}
+
+\subsection{Levantamiento de los contenedores}
+
+\begin{lstlisting}[style=plainStyle]
+docker compose up -d
+docker compose ps
+\end{lstlisting}
+
+\captura{01-compose.png}{Creación y estado de los once contenedores.}{1.0}
+
+Compose creó la red, los diez volúmenes y los once contenedores. En este punto los nodos están encendidos, pero todavía no forman un cluster.
+
+\subsection{Inicialización de los replica sets}
+
+El replica set del config server se inicializa con el comando \texttt{replSetInitiate}. El script se ejecuta desde el contenedor de \texttt{mongos} con \texttt{--nodb} y abre la conexión al config server por su nombre en la red de Docker.
+
+\lstinputlisting[style=jsStyle]{../configuracion/01-init-configsvr.js}
+
+\begin{lstlisting}[style=plainStyle]
+docker exec mongos mongosh --nodb --quiet --file /scripts/configuracion/01-init-configsvr.js
+\end{lstlisting}
+
+\captura{02-init-configsvr.png}{Inicialización del replica set del config server.}{0.9}
+
+Para cada shard, \texttt{replSetInitiate} se ejecuta en su primer miembro con la lista de los tres. El primer miembro lleva prioridad 2 para que sea elegido PRIMARY; los otros dos quedan como SECONDARY y copian sus datos.
+
+\lstinputlisting[style=jsStyle]{../configuracion/02-init-shards.js}
+
+\begin{lstlisting}[style=plainStyle]
+docker exec mongos mongosh --nodb --quiet --file /scripts/configuracion/02-init-shards.js
+\end{lstlisting}
+
+\captura{03-init-shards.png}{Inicialización de los replica sets de los tres shards.}{0.9}
+
+Cada shard quedó con un miembro PRIMARY y dos SECONDARY.
+
+\subsection{Registro de los shards}
+
+Se registran shard1 y shard2. El shard3 ya está inicializado, pero se agrega más adelante, con la colección ya cargada, para mostrar el balanceo de carga (sección \ref{sec:balanceo}).
+
+\lstinputlisting[style=jsStyle]{../configuracion/03-add-shards.js}
+
+\begin{lstlisting}[style=plainStyle]
+docker exec mongos mongosh --quiet --file /scripts/configuracion/03-add-shards.js
+\end{lstlisting}
+
+\captura{04-add-shards.png}{Registro de shard1 y shard2.}{0.9}
+
+Cada shard se registra con el nombre de su replica set y sus tres miembros, de modo que \texttt{mongos} sabe a qué nodo dirigirse si cambia el PRIMARY.
+
+% ============================================================
+\section{Utilizar la base de datos sample\_mflix y la colección movies}
+
+\subsection{Importación de los datos}
+
+El archivo \texttt{datos/movies.json} contiene las películas de la colección, un documento por línea en formato Extended JSON, que conserva los tipos de MongoDB como ObjectId y fechas. Se importó a través de \texttt{mongos} con \texttt{mongoimport}:
+
+\begin{lstlisting}[style=plainStyle]
+docker exec mongos mongoimport --db sample_mflix --collection movies --drop --file /datos/movies.json
+\end{lstlisting}
+
+\captura{05-importar-movies.png}{Importación de la colección movies.}{0.9}
+
+\subsection{Monitoreo de la distribución}
+
+Para revisar cómo se reparten los documentos se escribió un script de monitoreo que se ejecuta después de cada paso y de cada operación CRUD. Muestra el total de documentos, cuántos documentos y cuántos megabytes tiene cada shard (con la etapa \texttt{\$collStats}), los chunks de la colección en cada shard y el estado del balanceador.
+
+\lstinputlisting[style=jsStyle]{../monitoreo/distribucion.js}
+
+\begin{lstlisting}[style=plainStyle]
+docker exec mongos mongosh --quiet --file /scripts/monitoreo/distribucion.js
+\end{lstlisting}
+
+\captura{06-distribucion-inicial.png}{Distribución de movies después de la importación.}{0.9}
+
+Como la colección todavía no está fragmentada, las 21\,349 películas están en un solo shard, el shard primario de la base sample\_mflix.
+
+% ============================================================
+\section{Agregar a los documentos de películas un id\_movie}
+
+Las películas de sample\_mflix solo tienen el \_id de tipo ObjectId. Se agregó a cada una un campo id\_movie numérico y consecutivo, que después se usa como shard key. La etapa \texttt{\$setWindowFields} numera los documentos ordenados por \_id con \texttt{\$documentNumber}, y \texttt{\$merge} guarda el número en la misma colección.
+
+\lstinputlisting[style=jsStyle]{../configuracion/05-id-movie.js}
+
+\begin{lstlisting}[style=plainStyle]
+docker exec mongos mongosh --quiet --file /scripts/configuracion/05-id-movie.js
+\end{lstlisting}
+
+\captura{07-id-movie.png}{Asignación de id\_movie a las películas.}{0.9}
+
+Las 21\,349 películas recibieron un id\_movie del 1 al 21\,349, sin valores repetidos.
+
+% ============================================================
+\section{Definir el Shard Key de la colección Tipo: ``Hashed''}
+
+La shard key elegida fue \texttt{\{ id\_movie: "hashed" \}}. Los criterios fueron los siguientes:
+
+\begin{itemize}[itemsep=2pt, topsep=4pt]
+    \item Cardinalidad y frecuencia: id\_movie es único, así que tiene tantos valores como películas y ninguno se repite.
+    \item Crecimiento monótono: id\_movie es consecutivo. Con sharding por rangos, las películas nuevas caerían siempre en el último chunk y en un solo shard; el hash reparte los valores consecutivos entre todos los shards.
+    \item Consultas: buscar, actualizar o eliminar una película por su id\_movie se envía a un solo shard.
+\end{itemize}
+
+La colección pesa alrededor de 30 MB y el tamaño de chunk por omisión es de 128 MB. Con ese valor la colección completa cabría en un solo chunk y el balanceador no movería nada, por lo que se redujo a 1 MB. Como la colección ya tiene datos, antes de fragmentarla se crea el índice hashed sobre id\_movie.
+
+\lstinputlisting[style=jsStyle]{../configuracion/06-shard-collection.js}
+
+\begin{lstlisting}[style=plainStyle]
+docker exec mongos mongosh --quiet --file /scripts/configuracion/06-shard-collection.js
+\end{lstlisting}
+
+\captura{08-shard-collection.png}{Definición de la shard key hashed.}{0.9}
+
+Al fragmentar una colección que ya tiene datos, todos los documentos siguen en el shard donde se importaron, y el balanceador empieza a mover rangos hacia el otro shard. Después de unos minutos se ejecutó de nuevo el monitoreo:
+
+\captura{09-distribucion-fragmentada.png}{Distribución de movies entre shard1 y shard2 después de fragmentar.}{0.9}
+
+Las películas quedaron repartidas entre shard1 y shard2 en partes similares.
+
+% ============================================================
+\section{Replica sets de los shards}
+\label{sec:replicacion}
+
+% ------------------------------------------------------------
+% SECCIÓN A CARGO DE DIEGO. Ver CONTEXTO.md.
+% Scripts en replicacion/, capturas 10-14.
+% ------------------------------------------------------------
+
+\pendiente{estado de los replica sets (\texttt{rs.status()}): un PRIMARY y dos SECONDARY por shard, y que los SECONDARY tienen las mismas películas que el PRIMARY.}
+
+\pendiente{prueba de failover: detener el PRIMARY de un shard (\texttt{docker stop}), mostrar la elección del nuevo PRIMARY y que las consultas a través de mongos siguen funcionando; después volver a encender el nodo.}
+
+% ============================================================
+\section{Mostrar un ejemplo de balanceo de carga entre shards}
+\label{sec:balanceo}
+
+% ------------------------------------------------------------
+% SECCIÓN A CARGO DE DIEGO. Ver CONTEXTO.md.
+% Scripts en balanceo/, capturas 15-19.
+% ------------------------------------------------------------
+
+\pendiente{distribución antes de agregar shard3 (monitoreo), registro de shard3 con \texttt{sh.addShard}, monitoreo durante la migración y distribución final con los tres shards, más \texttt{sh.status()}.}
+
+% ============================================================
+\section{Realizar operaciones CRUD sobre la base de datos distribuida}
+
+% ------------------------------------------------------------
+% SECCIÓN A CARGO DE OSVALDO. Ver CONTEXTO.md.
+% Scripts en crud/, capturas 20-39. Después de cada operación,
+% captura del monitoreo (monitoreo/distribucion.js).
+% ------------------------------------------------------------
+
+\subsection{Create}
+\pendiente{inserción de películas con \texttt{insertOne} e \texttt{insertMany} (id\_movie mayores a 21\,349) y monitoreo de la distribución.}
+
+\subsection{Read}
+\pendiente{consultas por id\_movie (un solo shard) y por otros campos (todos los shards), con \texttt{explain()}, y monitoreo.}
+
+\subsection{Update}
+\pendiente{actualizaciones con \texttt{updateOne} y \texttt{updateMany} y monitoreo.}
+
+\subsection{Delete}
+\pendiente{eliminaciones con \texttt{deleteOne} y \texttt{deleteMany} y monitoreo.}
+
+% ============================================================
+\section{Conclusión}
+
+% Al final, entre todos: dos o tres párrafos con lo que se observó
+% (replicación, balanceo, distribución en las operaciones CRUD).
+\pendiente{conclusión del proyecto.}
+
+% ============================================================
+\section*{Referencias}
+\addcontentsline{toc}{section}{Referencias}
+
+\begin{list}{}{%
+    \setlength{\leftmargin}{1.27cm}
+    \setlength{\itemindent}{-1.27cm}
+    \setlength{\itemsep}{6pt}
+    \setlength{\parsep}{0pt}}
+\item Borucki, A. (2025). Using replication and sharding. En \textit{MongoDB 8.0 in Action} (3a ed., cap. 9). Manning.
+\item MongoDB, Inc. (s.f.). \textit{Replication}. MongoDB Manual. \url{https://www.mongodb.com/docs/manual/replication/}
+\item MongoDB, Inc. (s.f.). \textit{Sharding}. MongoDB Manual. \url{https://www.mongodb.com/docs/manual/sharding/}
+\item udaykirankavaturu. (s.f.). \textit{sharding-demo} [Repositorio]. GitHub. \url{https://github.com/udaykirankavaturu/sharding-demo}
+\end{list}
+
+\end{document}
