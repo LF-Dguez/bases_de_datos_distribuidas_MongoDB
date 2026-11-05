@@ -158,7 +158,7 @@ docker exec mongos mongosh --quiet --file /scripts/monitoreo/distribucion.js
 - [x] Repositorio, Docker Compose y datos (Luis Felipe).
 - [x] Scripts de configuración 01–06 y monitoreo (Luis Felipe).
 - [x] Plantilla del reporte con portada, introducción y secciones 4 a 7 escritas (Luis Felipe).
-- [ ] Probar la configuración en Docker y tomar las capturas 01–09 (Luis Felipe).
+- [x] Configuración probada en Docker (MongoDB 8.0.x) y capturas 01–09 tomadas (Luis Felipe). Resultado: 21 349 películas, `id_movie` 1–21 349; tras fragmentar, shard1 9 735 (45.6 %) y shard2 11 614 (54.4 %).
 - [ ] Parte 2: replica sets y balanceo (Diego).
 - [ ] Parte 3: CRUD con monitoreo (Osvaldo).
 - [ ] Conclusión, compilar el PDF y subirlo (todos).
