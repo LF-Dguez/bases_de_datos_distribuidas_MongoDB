@@ -1,0 +1,115 @@
+# Cluster de MongoDB con sharding para sample_mflix.movies
+#
+#   configsvr          config server (replica set configReplSet, 1 miembro)
+#   shard1-1..shard1-3 shard 1 (replica set shard1ReplSet, 3 miembros)
+#   shard2-1..shard2-3 shard 2 (replica set shard2ReplSet, 3 miembros)
+#   shard3-1..shard3-3 shard 3 (replica set shard3ReplSet, 3 miembros)
+#   mongos             router, unico nodo publicado (localhost:27030)
+#
+# Cada mongod limita su cache a 0.25 GB para que los 10 procesos quepan en
+# la memoria de Docker Desktop.
+
+x-shard: &shard
+  image: mongo:8.0
+  networks:
+    - mongo-cluster
+
+services:
+  configsvr:
+    image: mongo:8.0
+    container_name: configsvr
+    command: mongod --configsvr --replSet configReplSet --port 27017 --bind_ip_all --wiredTigerCacheSizeGB 0.25
+    volumes:
+      - configsvr_data:/data/configdb
+    networks:
+      - mongo-cluster
+
+  shard1-1:
+    <<: *shard
+    container_name: shard1-1
+    command: mongod --shardsvr --replSet shard1ReplSet --port 27017 --bind_ip_all --wiredTigerCacheSizeGB 0.25
+    volumes:
+      - shard1-1_data:/data/db
+  shard1-2:
+    <<: *shard
+    container_name: shard1-2
+    command: mongod --shardsvr --replSet shard1ReplSet --port 27017 --bind_ip_all --wiredTigerCacheSizeGB 0.25
+    volumes:
+      - shard1-2_data:/data/db
+  shard1-3:
+    <<: *shard
+    container_name: shard1-3
+    command: mongod --shardsvr --replSet shard1ReplSet --port 27017 --bind_ip_all --wiredTigerCacheSizeGB 0.25
+    volumes:
+      - shard1-3_data:/data/db
+
+  shard2-1:
+    <<: *shard
+    container_name: shard2-1
+    command: mongod --shardsvr --replSet shard2ReplSet --port 27017 --bind_ip_all --wiredTigerCacheSizeGB 0.25
+    volumes:
+      - shard2-1_data:/data/db
+  shard2-2:
+    <<: *shard
+    container_name: shard2-2
+    command: mongod --shardsvr --replSet shard2ReplSet --port 27017 --bind_ip_all --wiredTigerCacheSizeGB 0.25
+    volumes:
+      - shard2-2_data:/data/db
+  shard2-3:
+    <<: *shard
+    container_name: shard2-3
+    command: mongod --shardsvr --replSet shard2ReplSet --port 27017 --bind_ip_all --wiredTigerCacheSizeGB 0.25
+    volumes:
+      - shard2-3_data:/data/db
+
+  shard3-1:
+    <<: *shard
+    container_name: shard3-1
+    command: mongod --shardsvr --replSet shard3ReplSet --port 27017 --bind_ip_all --wiredTigerCacheSizeGB 0.25
+    volumes:
+      - shard3-1_data:/data/db
+  shard3-2:
+    <<: *shard
+    container_name: shard3-2
+    command: mongod --shardsvr --replSet shard3ReplSet --port 27017 --bind_ip_all --wiredTigerCacheSizeGB 0.25
+    volumes:
+      - shard3-2_data:/data/db
+  shard3-3:
+    <<: *shard
+    container_name: shard3-3
+    command: mongod --shardsvr --replSet shard3ReplSet --port 27017 --bind_ip_all --wiredTigerCacheSizeGB 0.25
+    volumes:
+      - shard3-3_data:/data/db
+
+  mongos:
+    image: mongo:8.0
+    container_name: mongos
+    command: mongos --configdb configReplSet/configsvr:27017 --port 27017 --bind_ip_all
+    ports:
+      - "27030:27017"
+    volumes:
+      - ./configuracion:/scripts/configuracion:ro
+      - ./monitoreo:/scripts/monitoreo:ro
+      - ./replicacion:/scripts/replicacion:ro
+      - ./balanceo:/scripts/balanceo:ro
+      - ./crud:/scripts/crud:ro
+      - ./datos:/datos:ro
+    depends_on:
+      - configsvr
+    networks:
+      - mongo-cluster
+
+volumes:
+  configsvr_data:
+  shard1-1_data:
+  shard1-2_data:
+  shard1-3_data:
+  shard2-1_data:
+  shard2-2_data:
+  shard2-3_data:
+  shard3-1_data:
+  shard3-2_data:
+  shard3-3_data:
+
+networks:
+  mongo-cluster:
