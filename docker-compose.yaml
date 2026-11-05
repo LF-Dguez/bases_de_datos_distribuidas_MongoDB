@@ -18,7 +18,9 @@ services:
   configsvr:
     image: mongo:8.0
     container_name: configsvr
-    command: mongod --configsvr --replSet configReplSet --port 27017 --bind_ip_all --wiredTigerCacheSizeGB 0.25
+    command: >-
+      mongod --configsvr --replSet configReplSet --port 27017
+      --bind_ip_all --wiredTigerCacheSizeGB 0.25
     volumes:
       - configsvr_data:/data/configdb
     networks:
@@ -27,64 +29,84 @@ services:
   shard1-1:
     <<: *shard
     container_name: shard1-1
-    command: mongod --shardsvr --replSet shard1ReplSet --port 27017 --bind_ip_all --wiredTigerCacheSizeGB 0.25
+    command: >-
+      mongod --shardsvr --replSet shard1ReplSet --port 27017
+      --bind_ip_all --wiredTigerCacheSizeGB 0.25
     volumes:
       - shard1-1_data:/data/db
   shard1-2:
     <<: *shard
     container_name: shard1-2
-    command: mongod --shardsvr --replSet shard1ReplSet --port 27017 --bind_ip_all --wiredTigerCacheSizeGB 0.25
+    command: >-
+      mongod --shardsvr --replSet shard1ReplSet --port 27017
+      --bind_ip_all --wiredTigerCacheSizeGB 0.25
     volumes:
       - shard1-2_data:/data/db
   shard1-3:
     <<: *shard
     container_name: shard1-3
-    command: mongod --shardsvr --replSet shard1ReplSet --port 27017 --bind_ip_all --wiredTigerCacheSizeGB 0.25
+    command: >-
+      mongod --shardsvr --replSet shard1ReplSet --port 27017
+      --bind_ip_all --wiredTigerCacheSizeGB 0.25
     volumes:
       - shard1-3_data:/data/db
 
   shard2-1:
     <<: *shard
     container_name: shard2-1
-    command: mongod --shardsvr --replSet shard2ReplSet --port 27017 --bind_ip_all --wiredTigerCacheSizeGB 0.25
+    command: >-
+      mongod --shardsvr --replSet shard2ReplSet --port 27017
+      --bind_ip_all --wiredTigerCacheSizeGB 0.25
     volumes:
       - shard2-1_data:/data/db
   shard2-2:
     <<: *shard
     container_name: shard2-2
-    command: mongod --shardsvr --replSet shard2ReplSet --port 27017 --bind_ip_all --wiredTigerCacheSizeGB 0.25
+    command: >-
+      mongod --shardsvr --replSet shard2ReplSet --port 27017
+      --bind_ip_all --wiredTigerCacheSizeGB 0.25
     volumes:
       - shard2-2_data:/data/db
   shard2-3:
     <<: *shard
     container_name: shard2-3
-    command: mongod --shardsvr --replSet shard2ReplSet --port 27017 --bind_ip_all --wiredTigerCacheSizeGB 0.25
+    command: >-
+      mongod --shardsvr --replSet shard2ReplSet --port 27017
+      --bind_ip_all --wiredTigerCacheSizeGB 0.25
     volumes:
       - shard2-3_data:/data/db
 
   shard3-1:
     <<: *shard
     container_name: shard3-1
-    command: mongod --shardsvr --replSet shard3ReplSet --port 27017 --bind_ip_all --wiredTigerCacheSizeGB 0.25
+    command: >-
+      mongod --shardsvr --replSet shard3ReplSet --port 27017
+      --bind_ip_all --wiredTigerCacheSizeGB 0.25
     volumes:
       - shard3-1_data:/data/db
   shard3-2:
     <<: *shard
     container_name: shard3-2
-    command: mongod --shardsvr --replSet shard3ReplSet --port 27017 --bind_ip_all --wiredTigerCacheSizeGB 0.25
+    command: >-
+      mongod --shardsvr --replSet shard3ReplSet --port 27017
+      --bind_ip_all --wiredTigerCacheSizeGB 0.25
     volumes:
       - shard3-2_data:/data/db
   shard3-3:
     <<: *shard
     container_name: shard3-3
-    command: mongod --shardsvr --replSet shard3ReplSet --port 27017 --bind_ip_all --wiredTigerCacheSizeGB 0.25
+    command: >-
+      mongod --shardsvr --replSet shard3ReplSet --port 27017
+      --bind_ip_all --wiredTigerCacheSizeGB 0.25
     volumes:
       - shard3-3_data:/data/db
 
   mongos:
     image: mongo:8.0
     container_name: mongos
-    command: mongos --configdb configReplSet/configsvr:27017 --port 27017 --bind_ip_all
+    command: >-
+      mongos --configdb configReplSet/configsvr:27017 --port 27017
+      --bind_ip_all
     ports:
       - "27030:27017"
     volumes:
