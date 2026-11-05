@@ -140,5 +140,5 @@ con id_movie mayor a 21349 (en ese caso, correr antes `delete.js`).
 ## Apagar el cluster
 ```bash
 docker compose down        # conserva los datos en los volúmenes
-docker compose down -v     # borra también los volúmenes (hay que volver a configurar)
+docker compose down -v     # borra también los volúmenes
 ```
