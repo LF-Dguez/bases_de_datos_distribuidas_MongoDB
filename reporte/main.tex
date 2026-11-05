@@ -274,7 +274,7 @@ El replica set del config server se inicializa con el comando \texttt{replSetIni
 docker exec mongos mongosh --nodb --quiet --file /scripts/configuracion/01-init-configsvr.js
 \end{lstlisting}
 
-\captura{02-init-configsvr.png}{Inicialización del replica set del config server.}{0.9}
+\captura{02-init-configsvr.png}{Inicialización del replica set del config server.}{1.0}
 
 Para cada shard, \texttt{replSetInitiate} se ejecuta en su primer miembro con la lista de los tres. El primer miembro lleva prioridad 2 para que sea elegido PRIMARY; los otros dos quedan como SECONDARY y copian sus datos.
 
@@ -284,9 +284,9 @@ Para cada shard, \texttt{replSetInitiate} se ejecuta en su primer miembro con la
 docker exec mongos mongosh --nodb --quiet --file /scripts/configuracion/02-init-shards.js
 \end{lstlisting}
 
-\captura{03-init-shards.png}{Inicialización de los replica sets de los tres shards.}{0.9}
+\captura{03-init-shards.png}{Inicialización de los replica sets de los tres shards.}{1.0}
 
-Cada shard quedó con un miembro PRIMARY y dos SECONDARY.
+Cada shard quedó con un miembro PRIMARY y dos SECONDARY. En shard3 la primera elección la ganó shard3-3; como shard3-1 tiene mayor prioridad, unos segundos después, ya sincronizado, toma el lugar de PRIMARY.
 
 \subsection{Registro de los shards}
 
@@ -298,7 +298,7 @@ Se registran shard1 y shard2. El shard3 ya está inicializado, pero se agrega m�
 docker exec mongos mongosh --quiet --file /scripts/configuracion/03-add-shards.js
 \end{lstlisting}
 
-\captura{04-add-shards.png}{Registro de shard1 y shard2.}{0.9}
+\captura{04-add-shards.png}{Registro de shard1 y shard2.}{1.0}
 
 Cada shard se registra con el nombre de su replica set y sus tres miembros, de modo que \texttt{mongos} sabe a qué nodo dirigirse si cambia el PRIMARY.
 
@@ -313,7 +313,7 @@ El archivo \texttt{datos/movies.json} contiene las películas de la colección, 
 docker exec mongos mongoimport --db sample_mflix --collection movies --drop --file /datos/movies.json
 \end{lstlisting}
 
-\captura{05-importar-movies.png}{Importación de la colección movies.}{0.9}
+\captura{05-importar-movies.png}{Importación de la colección movies.}{1.0}
 
 \subsection{Monitoreo de la distribución}
 
@@ -325,9 +325,9 @@ Para revisar cómo se reparten los documentos se escribió un script de monitore
 docker exec mongos mongosh --quiet --file /scripts/monitoreo/distribucion.js
 \end{lstlisting}
 
-\captura{06-distribucion-inicial.png}{Distribución de movies después de la importación.}{0.9}
+\captura{06-distribucion-inicial.png}{Distribución de movies después de la importación.}{1.0}
 
-Como la colección todavía no está fragmentada, las 21\,349 películas están en un solo shard, el shard primario de la base sample\_mflix.
+Como la colección todavía no está fragmentada, las 21\,349 películas están en un solo shard, shard2, que es el shard primario de la base sample\_mflix.
 
 % ============================================================
 \section{Agregar a los documentos de películas un id\_movie}
@@ -340,7 +340,7 @@ Las películas de sample\_mflix solo tienen el \_id de tipo ObjectId. Se agregó
 docker exec mongos mongosh --quiet --file /scripts/configuracion/05-id-movie.js
 \end{lstlisting}
 
-\captura{07-id-movie.png}{Asignación de id\_movie a las películas.}{0.9}
+\captura{07-id-movie.png}{Asignación de id\_movie a las películas.}{1.0}
 
 Las 21\,349 películas recibieron un id\_movie del 1 al 21\,349, sin valores repetidos.
 
@@ -363,11 +363,11 @@ La colección pesa alrededor de 30 MB y el tamaño de chunk por omisión es de 1
 docker exec mongos mongosh --quiet --file /scripts/configuracion/06-shard-collection.js
 \end{lstlisting}
 
-\captura{08-shard-collection.png}{Definición de la shard key hashed.}{0.9}
+\captura{08-shard-collection.png}{Definición de la shard key hashed.}{1.0}
 
 Al fragmentar una colección que ya tiene datos, todos los documentos siguen en el shard donde se importaron, y el balanceador empieza a mover rangos hacia el otro shard. Después de unos minutos se ejecutó de nuevo el monitoreo:
 
-\captura{09-distribucion-fragmentada.png}{Distribución de movies entre shard1 y shard2 después de fragmentar.}{0.9}
+\captura{09-distribucion-fragmentada.png}{Distribución de movies entre shard1 y shard2 después de fragmentar.}{1.0}
 
 Las películas quedaron repartidas entre shard1 y shard2 en partes similares. El balanceador se detiene cuando la diferencia de datos entre los shards es menor a tres veces el tamaño de chunk, por eso el reparto no es exactamente a la mitad. La columna de huérfanos cuenta las copias que quedan en el shard de origen después de migrar un chunk: \texttt{mongos} nunca las devuelve en las consultas, y el shard las borra por sí solo unos minutos después de la migración.
 
