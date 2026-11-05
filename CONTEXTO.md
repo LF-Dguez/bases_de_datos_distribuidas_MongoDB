@@ -145,6 +145,12 @@ docker exec mongos mongosh --quiet --file /scripts/monitoreo/distribucion.js
 - Para empezar desde cero: `docker compose down -v` (borra los datos) y repetir todo.
 - En Git Bash hay que anteponer `MSYS_NO_PATHCONV=1` a los comandos con rutas `/scripts/...` o `/datos/...`.
 
+### Cómo leer el monitoreo
+
+- **Documentos**: los que le pertenecen a cada shard según sus chunks (`$shardedDataDistribution`). Suman el total de la colección.
+- **Huérfanos**: copias que quedan en el shard de origen después de que el balanceador migra un chunk a otro shard. `mongos` nunca los devuelve en las consultas y el shard los borra solo, unos 15 minutos después de la migración. Es normal verlos durante y justo después del balanceo (Parte 2); en el reporte vale la pena explicarlo.
+- El balanceador deja de mover datos cuando la diferencia entre shards es menor a 3 veces el tamaño de chunk (3 MB), por eso el reparto no queda exactamente igual.
+
 ---
 
 ## 7. Avance
@@ -221,7 +227,7 @@ Capturas de la Parte 1 (ya referenciadas en `main.tex`):
 | `06-distribucion-inicial.png` | `monitoreo/distribucion.js` | 21 349 documentos en un solo shard; colección no fragmentada |
 | `07-id-movie.png` | `05-id-movie.js` | `id_movie de 1 a 21349, 21349 valores distintos` |
 | `08-shard-collection.png` | `06-shard-collection.js` | `chunksize: 1 MB`, índice `id_movie_hashed` y `collectionsharded` |
-| `09-distribucion-fragmentada.png` | `monitoreo/distribucion.js` (unos minutos después) | Películas repartidas entre shard1 y shard2 |
+| `09-distribucion-fragmentada.png` | `monitoreo/distribucion.js` (unos minutos después) | Películas repartidas entre shard1 y shard2 (cerca de 45 % / 55 %). Si la columna Huérfanos no está en 0, esperar ~15 min y repetir |
 
 ---
 

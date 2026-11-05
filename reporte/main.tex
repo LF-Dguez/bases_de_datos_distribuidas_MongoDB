@@ -317,7 +317,7 @@ docker exec mongos mongoimport --db sample_mflix --collection movies --drop --fi
 
 \subsection{Monitoreo de la distribución}
 
-Para revisar cómo se reparten los documentos se escribió un script de monitoreo que se ejecuta después de cada paso y de cada operación CRUD. Muestra el total de documentos, cuántos documentos y cuántos megabytes tiene cada shard (con la etapa \texttt{\$collStats}), los chunks de la colección en cada shard y el estado del balanceador.
+Para revisar cómo se reparten los documentos se escribió un script de monitoreo que se ejecuta después de cada paso y de cada operación CRUD. Mientras la colección no está fragmentada, usa la etapa \texttt{\$collStats} para mostrar en qué shard están los documentos. Ya fragmentada, usa \texttt{\$shardedDataDistribution}, que reporta por shard los documentos que le pertenecen, su tamaño y los documentos huérfanos; además cuenta los chunks de cada shard y muestra el estado del balanceador.
 
 \lstinputlisting[style=jsStyle]{../monitoreo/distribucion.js}
 
@@ -369,7 +369,7 @@ Al fragmentar una colección que ya tiene datos, todos los documentos siguen en 
 
 \captura{09-distribucion-fragmentada.png}{Distribución de movies entre shard1 y shard2 después de fragmentar.}{0.9}
 
-Las películas quedaron repartidas entre shard1 y shard2 en partes similares.
+Las películas quedaron repartidas entre shard1 y shard2 en partes similares. El balanceador se detiene cuando la diferencia de datos entre los shards es menor a tres veces el tamaño de chunk, por eso el reparto no es exactamente a la mitad. La columna de huérfanos cuenta las copias que quedan en el shard de origen después de migrar un chunk: \texttt{mongos} nunca las devuelve en las consultas, y el shard las borra por sí solo unos minutos después de la migración.
 
 % ============================================================
 \section{Replica sets de los shards}
