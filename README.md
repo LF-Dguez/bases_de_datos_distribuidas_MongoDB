@@ -136,7 +136,6 @@ con id_movie mayor a 21349 (en ese caso, correr antes `delete.js`).
 - `balanceo/`: ejemplo de balanceo de carga al agregar shard3
 - `crud/`: operaciones CRUD sobre `movies` (`comun.js` tiene las funciones de monitoreo)
 - `reporte/`: reporte de la práctica en LaTeX
-- `CONTEXTO.md`: decisiones, reparto del trabajo y avance del proyecto
 
 ## Apagar el cluster
 ```bash
